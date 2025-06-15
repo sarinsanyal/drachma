@@ -6,13 +6,13 @@ import { motion } from "framer-motion";
 
 export default function HeroPage() {
   return (
-    <section className="min-h-screen bg-gradient-to-b from-white to-slate-100 flex items-center justify-center p-6">
+    <section className="min-h-screen flex items-center justify-center p-6 font-[family-name:var(--font-geist-sans)]">
       <div className="max-w-4xl text-center">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-5xl md:text-6xl font-extrabold text-gray-900"
+          className="text-5xl md:text-6xl font-extrabold text-white"
         >
           Welcome to <span className="text-blue-600">Drachma</span>
         </motion.h1>
@@ -32,11 +32,8 @@ export default function HeroPage() {
           transition={{ delay: 0.6, duration: 0.6 }}
           className="mt-8 flex justify-center gap-4"
         >
-          <Button className="text-base cursor-pointer px-6 py-3">
-            Get Started <ArrowRight className="ml-2 w-4 h-4" />
-          </Button>
-          <Button variant="outline" className="text-base cursor-pointer px-6 py-3">
-            Learn More
+          <Button variant="secondary" className="text-base cursor-pointer px-6 py-3">
+            Get Started
           </Button>
         </motion.div>
       </div>

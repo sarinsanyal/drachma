@@ -1,127 +1,28 @@
-"use client";
+"use client"
+
 import Link from "next/link";
-// import { useState } from "react";
-import { Home, User } from "lucide-react";
-import React from "react";
-import { FaTwitter, FaGithub, FaLinkedin } from "react-icons/fa";
-import { buttonVariants } from "@/components/ui/button"
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
-// import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
-import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
-import { useTheme } from "next-themes";
+import { AuroraText } from "../magicui/aurora-text";
+import { Button } from "../ui/button";
+import { ShimmerButton } from "@/components/magicui/shimmer-button";
 
 export default function Navbar() {
-    const { theme, setTheme } = useTheme();
-
     return (
-        <div className="w-full flex justify-center">
-            {/* Sticky Navbar */}
-            <div className="fixed top-5 left-1/2 transform -translate-x-1/2 
-                            inline-flex justify-center border p-5 rounded-full 
-                            font-[family-name:var(--font-geist-sans)] 
-                            bg-background/50 backdrop-blur-md z-50 
-                            max-w-[90%] sm:max-w-fit">
-                <div className="flex">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Link
-                                href="/"
-                                className={cn(
-                                    buttonVariants({ variant: "ghost", size: "icon" }),
-                                    "size-5 mr-3",
-                                )}
-                            >
-                                <Home className="size-5" />
-                            </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Home</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-                    {/* Create Room */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Link
-                                href="/room"
-                                className={cn(
-                                    buttonVariants({ variant: "ghost", size: "icon" }),
-                                    "size-5 mr-3",
-                                )}
-                            >
-                                <User className="size-5" />
-                            </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Login</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-                    <Separator orientation="vertical" color="black" className="mr-2" />
-
-                    {/* Social Links */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Link
-                                href="https://github.com/sarinsanyal/drachma"
-                                target="_blank"
-                                className={cn(
-                                    buttonVariants({ variant: "ghost", size: "icon" }),
-                                    "size-5 mr-5",
-                                )}
-                            >
-                                <FaGithub className="size-5" />
-                            </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Contribute</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Link
-                                href="https://twitter.com/sarinsanyal"
-                                target="_blank"
-                                className={cn(
-                                    buttonVariants({ variant: "ghost", size: "icon" }),
-                                    "size-5 mr-5",
-                                )}
-                            >
-                                <FaTwitter className="size-5" />
-                            </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Twitter</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Link
-                                href="https://linkedin.com/in/sarinsanyal"
-                                target="_blank"
-                                className={cn(
-                                    buttonVariants({ variant: "ghost", size: "icon" }),
-                                    "size-5 mr-5",
-                                )}
-                            >
-                                <FaLinkedin className="size-5" />
-                            </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>LinkedIn</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
+        <nav className="flex items-center justify-between text-sm align-middle p-6 pb-3 border-t-1 font-[family-name:var(--font-geist-sans)]">
+            <div className="font-extrabold text-3xl">
+                <Link href="/">
+                    <AuroraText> Drachma</AuroraText>
+                </Link>
             </div>
-        </div>
-    );
+            <div className="font-bold justify-between text-lg">
+                <Link href="/" className="px-5">What is Drachma?</Link>
+                <Link href="/" className="px-5">How to use</Link>
+                <Link href="/" className="px-5">Reviews</Link>
+            </div>
+            <div>
+                <ShimmerButton className="cursor-pointer font-bold text-white" background="black">
+                    Sign Up
+                </ShimmerButton>
+            </div>
+        </nav>
+    )
 }
