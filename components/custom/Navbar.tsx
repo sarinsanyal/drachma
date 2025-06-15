@@ -70,7 +70,7 @@ export default function Navbar() {
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Link
-                                href="https://github.com/sarinsanyal/whiteboard"
+                                href="https://github.com/sarinsanyal/drachma"
                                 target="_blank"
                                 className={cn(
                                     buttonVariants({ variant: "ghost", size: "icon" }),
@@ -118,27 +118,6 @@ export default function Navbar() {
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>LinkedIn</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-                    <Separator orientation="vertical" color="black" className="mr-2" />
-
-                    {/* Theme Toggle */}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                type="button"
-                                size={5 as unknown as "default" | "sm" | "lg" | "icon" | null | undefined}
-                                className="cursor-pointer"
-                                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                            >
-                                <SunIcon className="text-neutral-800 dark:hidden dark:text-neutral-200" />
-                                <MoonIcon className="hidden text-neutral-800 dark:block dark:text-neutral-200" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Theme</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
