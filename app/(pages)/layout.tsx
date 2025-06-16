@@ -31,7 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased animate-gradient`} style={{ backgroundImage: "linear-gradient(to right, #1e1b4b, black)", color: "white" }}>
         <Navbar />
         {children}<Analytics />
-        <Footer />
+        <Footer /> 
       </body>
     </html>
   );
