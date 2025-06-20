@@ -37,7 +37,7 @@ export default function StockChart() {
   }, []);
 
   return (
-    <div className="w-full h-80 py-10 relative bg-transparent/80 backdrop-blur-xl rounded-xl px-8 shadow-2xl border border-white/10">
+    <div className="w-full h-120 py-10 relative bg-transparent/80 backdrop-blur-xl rounded-xl px-8 shadow-2xl border border-white/10">
       <h2 className="text-white font-bold mb-2 text-lg">Drachma Index</h2>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>

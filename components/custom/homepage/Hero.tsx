@@ -32,12 +32,12 @@ export default function HeroPage() {
     return (
         <section className="min-h-screen flex flex-col md:flex-row justify-between gap-8 p-6 pt-20 text-white font-[family-name:var(--font-geist-sans)]">
             {/* Left Text Block */}
-            <div className="w-full md:w-3/5 max-w-4xl">
+            <div className="w-full md:w-1/2 max-w-4xl">
                 <motion.h1
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6"
+                    className="text-5xl sm:text-5xl md:text-6xl font-extrabold mb-6"
                 >
                     <AuroraText>Mock Stock Trading</AuroraText><br />
                     Right at your fingertips!
@@ -47,7 +47,7 @@ export default function HeroPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.6 }}
-                    className="flex gap-6 mb-6"
+                    className="flex gap-6 mb-10 mt-15"
                 >
                     <div>
                         <div className="text-3xl sm:text-4xl font-bold">
@@ -78,7 +78,7 @@ export default function HeroPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.6 }}
-                className="w-full md:w-[38%] bg-rgb(28, 16, 62)">
+                className="w-full md:w-1/2 bg-rgb(28, 16, 62)">
                 <StockChart />
             </motion.div>
         </section>

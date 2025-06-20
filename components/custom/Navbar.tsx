@@ -21,7 +21,7 @@ export default function Navbar() {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex gap-4 font-bold text-md md:text-lg">
-                    <Link href="/" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">What is Drachma?</Link>
+                    <Link href="/#features" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">What is Drachma?</Link>
                     <Link href="/" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">How to use</Link>
                     <Link href="/" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">Reviews</Link>
                 </div>
@@ -47,7 +47,7 @@ export default function Navbar() {
             {/* Mobile Menu */}
             {menuOpen && (
                 <div className="mt-4 flex flex-col gap-3 md:hidden font-bold">
-                    <Link href="/" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">What is Drachma?</Link>
+                    <Link href="/#what-is-drachma" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">What is Drachma?</Link>
                     <Link href="/" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">How to use</Link>
                     <Link href="/" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">Reviews</Link>
                     <Button className="mt-2 font-bold text-white bg-transparent border-2 border-blue-400 px-5 py-2 hover:bg-gray-500 transition">
