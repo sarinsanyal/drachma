@@ -4,6 +4,7 @@ import { motion, animate } from "framer-motion";
 import { useState, useEffect } from "react";
 import { AuroraText } from "@/components/magicui/aurora-text";
 import StockChart from "./StockChart";
+import { InteractiveHoverButton } from "@/components/magicui/interactive-hover-button";
 
 export default function HeroPage() {
     const [companyCount, setCompanyCount] = useState(0);
@@ -71,6 +72,17 @@ export default function HeroPage() {
                 >
                     Simulate real-time stock trading in dynamic markets with live price changes and a $10,000 starting balance. Compete on live leaderboards, test your strategies, and learn the fundamentals of finance in a fun, interactive way!
                 </motion.p>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9, duration: 0.6 }}
+                    className="mt-8"
+                >
+                    <InteractiveHoverButton className="text-black text-lg px-6 py-3">
+                        Sign Up & Start Trading
+                    </InteractiveHoverButton>
+                </motion.div>
             </div>
 
             {/* Right Stock Chart */}
