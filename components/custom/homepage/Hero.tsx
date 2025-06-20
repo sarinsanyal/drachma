@@ -77,7 +77,7 @@ export default function HeroPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9, duration: 0.6 }}
-                    className="mt-8"
+                    className="mt-8 flex justify-center sm:justify-start w-full"
                 >
                     <InteractiveHoverButton className="text-black text-lg px-6 py-3">
                         Sign Up & Start Trading
