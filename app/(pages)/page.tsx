@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import Features from "@/components/custom/homepage/Features";
 import Navbar from "@/components/custom/Navbar";
 import Use from "@/components/custom/homepage/HowToUse";
+import Reviews from "@/components/custom/homepage/Reviews";
 
 export default function Main() {
   return (
@@ -13,6 +14,7 @@ export default function Main() {
       <HeroPage />
       <Features />
       <Use />
+      <Reviews />
     </div>
   );
 }
