@@ -81,7 +81,7 @@ export default function HeroPage() {
                     className="mt-8 flex justify-center sm:justify-start w-full"
                 >
                     <InteractiveHoverButton className="text-black text-lg px-6 py-3">
-                        <Link href = "/signup"> 
+                        <Link href = "/auth"> 
                             Sign Up & Start Trading
                         </Link>
                     </InteractiveHoverButton>
