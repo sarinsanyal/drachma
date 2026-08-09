@@ -45,7 +45,7 @@ export default function OnboardingPage() {
             setUsername(user.user_metadata?.user_name || "");
 
             const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
-            
+
             setAvatarUrl(googleAvatar);
             setAvatarPreview(googleAvatar);
         });
@@ -264,7 +264,7 @@ export default function OnboardingPage() {
 
                     {/* Leaderboard preview */}
                     <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden flex items-center justify-center bg-white/10 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden flex items-center justify-center bg-white/10 shrink-0">
                             {avatarPreview ? (
                                 <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -278,7 +278,7 @@ export default function OnboardingPage() {
                             <span className="text-white/50 text-xs">@{username || "username"}</span>
                             {bio && <span className="text-white/40 text-xs mt-0.5 truncate">{bio}</span>}
                         </div>
-                        <div className="flex flex-col items-end flex-shrink-0">
+                        <div className="flex flex-col items-end shrink-0">
                             <span className="text-green-400 font-bold text-sm">$10,000.00</span>
                             <span className="text-white/40 text-xs">Balance</span>
                         </div>
