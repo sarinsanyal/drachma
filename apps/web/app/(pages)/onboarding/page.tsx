@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast, Toaster } from "sonner";
-import { FaCheck, FaTimes } from "react-icons/fa";
+import { FaCheck, FaTimes, FaLock } from "react-icons/fa";
 import Image from "next/image";
 
 type AvailabilityStatus = "idle" | "checking" | "available" | "taken";
@@ -21,6 +21,7 @@ export default function OnboardingPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [user, setUser] = useState<any>(null);
+    const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [username, setUsername] = useState("");
     const [phone, setPhone] = useState("");
@@ -34,11 +35,19 @@ export default function OnboardingPage() {
     useEffect(() => {
         supabase.auth.getUser().then(({ data: { user } }) => {
             if (!user) { router.push("/auth"); return; }
+
+            console.log("user.email:", user.email);
+            console.log("user_metadata:", user.user_metadata);
+
             setUser(user);
+            setEmail(user.email || "");
             setName(user.user_metadata?.full_name || user.user_metadata?.name || "");
             setUsername(user.user_metadata?.user_name || "");
-            setAvatarUrl(user.user_metadata?.avatar_url || "");
-            setAvatarPreview(user.user_metadata?.avatar_url || "");
+
+            const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
+            
+            setAvatarUrl(googleAvatar);
+            setAvatarPreview(googleAvatar);
         });
     }, []);
 
@@ -96,9 +105,13 @@ export default function OnboardingPage() {
             finalImageUrl = urlData.publicUrl;
         }
 
+        // Always use the authenticated session's email — never the (non-editable) form state,
+        // as a defense-in-depth measure in case state was ever tampered with client-side.
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
+
         const { error } = await supabase.from("profiles").insert({
             id: user.id,
-            email: user.email,
+            email: freshUser?.email || email,
             name: name.trim(),
             username: username.trim().toLowerCase(),
             phone: phone.trim() || null,
@@ -175,6 +188,21 @@ export default function OnboardingPage() {
                             Click to upload photo
                         </p>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    </div>
+
+                    {/* Email — locked, from auth session */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm text-white/60">Email</label>
+                        <div className="relative">
+                            <input
+                                type="email"
+                                value={email}
+                                disabled
+                                readOnly
+                                className="w-full px-4 py-2 rounded-md bg-white/5 border border-white/10 text-white/50 cursor-not-allowed pr-10"
+                            />
+                            <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 text-xs" />
+                        </div>
                     </div>
 
                     {/* Name */}

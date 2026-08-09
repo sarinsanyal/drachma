@@ -23,15 +23,31 @@ export async function GET(request: NextRequest) {
             }
         );
 
-        await supabase.auth.exchangeCodeForSession(code);
-        const { data: { user } } = await supabase.auth.getUser();
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+            console.error("[auth/callback] exchangeCodeForSession failed:", exchangeError.message);
+            return NextResponse.redirect(new URL("/auth?error=exchange_failed", request.url));
+        }
+
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+            console.error("[auth/callback] getUser failed:", userError.message);
+        }
 
         if (user) {
-            const { data: profile } = await supabase
+            console.log("[auth/callback] Authenticated user:", user.id, user.email);
+
+            const { data: profile, error: profileError } = await supabase
                 .from("profiles")
                 .select("id")
                 .eq("id", user.id)
                 .single();
+
+            if (profileError) {
+                console.log("[auth/callback] Profile lookup error (expected if new user):", profileError.message);
+            }
 
             if (profile) {
                 return NextResponse.redirect(new URL("/dashboard", request.url));
@@ -39,6 +55,10 @@ export async function GET(request: NextRequest) {
                 return NextResponse.redirect(new URL("/onboarding", request.url));
             }
         }
+
+        console.error("[auth/callback] No user after exchange, code was:", code.slice(0, 8) + "...");
+    } else {
+        console.error("[auth/callback] No code param in callback URL");
     }
 
     return NextResponse.redirect(new URL("/auth", request.url));

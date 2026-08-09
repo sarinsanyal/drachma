@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/custom/Navbar";
+import { Button } from "@/components/ui/button";
+import { toast, Toaster } from "sonner";
+import { FiLogOut } from "react-icons/fi";
 
 type Profile = {
     id: string;
@@ -18,8 +22,10 @@ type Profile = {
 
 export default function Dashboard() {
     const supabase = createClient();
+    const router = useRouter();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loggingOut, setLoggingOut] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -50,6 +56,20 @@ export default function Dashboard() {
         fetchProfile();
     }, []);
 
+    const handleLogout = async () => {
+        setLoggingOut(true);
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+            toast.error(error.message);
+            setLoggingOut(false);
+            return;
+        }
+
+        router.push("/auth");
+        router.refresh();
+    };
+
     if (loading) {
         return (
             <div>
@@ -74,6 +94,7 @@ export default function Dashboard() {
 
     return (
         <div>
+            <Toaster />
             <Navbar />
             <div className="min-h-screen text-white flex flex-col items-center justify-center gap-6 px-4 py-12">
                 <div className="w-full max-w-md bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl p-8 flex flex-col items-center gap-4">
@@ -122,6 +143,16 @@ export default function Dashboard() {
                             </span>
                         </div>
                     </div>
+
+                    <Button
+                        variant="outline"
+                        className="w-full flex items-center gap-2 justify-center text-black border-white/20 hover:bg-white/10 hover:text-white cursor-pointer mt-2"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                    >
+                        <FiLogOut />
+                        {loggingOut ? "Logging out..." : "Log out"}
+                    </Button>
                 </div>
 
                 <p className="text-white/30 text-xs">Trading dashboard coming soon.</p>
