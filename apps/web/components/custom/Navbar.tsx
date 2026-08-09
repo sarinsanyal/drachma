@@ -35,6 +35,7 @@ export default function Navbar() {
                     <Link href="/#features" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">What is Drachma?</Link>
                     <Link href="/#how-to-use" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">How to use</Link>
                     <Link href="/#reviews" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">Reviews</Link>
+                    <Link href="/blog" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">Blog</Link>
                 </div>
 
                 <div className="hidden md:block">
@@ -58,6 +59,7 @@ export default function Navbar() {
                     <Link href="/#features" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">What is Drachma?</Link>
                     <Link href="/#how-to-use" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">How to use</Link>
                     <Link href="/#reviews" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">Reviews</Link>
+                    <Link href="/blog" className="px-3 text-gray-300 hover:text-white transition-colors duration-250">Blog</Link>
                     <button
                         onClick={handleAuthClick}
                         className="mt-2 text-left font-bold text-white bg-transparent border-2 border-blue-400 px-5 py-2 hover:bg-gray-500 transition"

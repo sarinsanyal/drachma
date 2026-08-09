@@ -7,6 +7,9 @@ const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 const CACHE_KEY = "quotes:all";
 const CACHE_TTL_SECONDS = 60; // 1 min when market open, fine for closed too
 
+const BATCH_SIZE = 10;
+const BATCH_DELAY_MS = 1100; // stay comfortably under Finnhub burst limits
+
 type FinnhubQuote = {
     c: number;
     pc: number;
@@ -29,33 +32,51 @@ type QuoteData = {
     open: number;
 };
 
+async function fetchQuote(symbol: string): Promise<[string, QuoteData] | null> {
+    try {
+        const res = await fetch(
+            `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+        );
+        if (!res.ok) return null;
+        const q: FinnhubQuote = await res.json();
+        // Finnhub returns 0 for all fields if symbol is invalid
+        if (!q.c) return null;
+        return [symbol, {
+            symbol,
+            name: TICKER_NAMES[symbol] ?? symbol,
+            price: q.c,
+            previousClose: q.pc,
+            change: q.d,
+            changePct: q.dp,
+            high: q.h,
+            low: q.l,
+            open: q.o,
+        }] as [string, QuoteData];
+    } catch {
+        return null;
+    }
+}
+
 async function fetchAllFromFinnhub(): Promise<Record<string, QuoteData>> {
-    const results = await Promise.all(
-        TRACKED_SYMBOLS.map(async (symbol) => {
-            try {
-                const res = await fetch(
-                    `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
-                );
-                if (!res.ok) return null;
-                const q: FinnhubQuote = await res.json();
-                // Finnhub returns 0 for all fields if symbol is invalid
-                if (!q.c) return null;
-                return [symbol, {
-                    symbol,
-                    name: TICKER_NAMES[symbol] ?? symbol,
-                    price: q.c,
-                    previousClose: q.pc,
-                    change: q.d,
-                    changePct: q.dp,
-                    high: q.h,
-                    low: q.l,
-                    open: q.o,
-                }] as [string, QuoteData];
-            } catch {
-                return null;
-            }
-        })
-    );
+    const results: ([string, QuoteData] | null)[] = [];
+
+    for (let i = 0; i < TRACKED_SYMBOLS.length; i += BATCH_SIZE) {
+        const batch = TRACKED_SYMBOLS.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(batch.map(fetchQuote));
+        results.push(...batchResults);
+
+        if (i + BATCH_SIZE < TRACKED_SYMBOLS.length) {
+            await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+        }
+    }
+
+    // retry any that failed once, after the main pass
+    const failedSymbols = TRACKED_SYMBOLS.filter((_, idx) => results[idx] === null);
+    if (failedSymbols.length > 0) {
+        await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+        const retried = await Promise.all(failedSymbols.map(fetchQuote));
+        results.push(...retried);
+    }
 
     return Object.fromEntries(results.filter(Boolean) as [string, QuoteData][]);
 }

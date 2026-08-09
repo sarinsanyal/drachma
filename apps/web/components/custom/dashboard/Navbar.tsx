@@ -18,7 +18,7 @@ const NAV_LINKS = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/stocks", label: "Stocks" },
     { href: "/dashboard/news", label: "News" },
-    { href: "/blog", label: "Learn" },
+    { href: "/dashboard/learn", label: "Learn" },
 ];
 
 function getInitials(name: string) {

@@ -10,9 +10,6 @@ import candlesRouter from "./routes/candles";
 
 dotenv.config();
 
-warmQuoteCache();
-setInterval(warmQuoteCache, 60_000);
-
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || "*" }));
 app.use(express.json());
@@ -36,16 +33,26 @@ io.on("connection", (socket) => {
     });
 });
 
-connectFinnhub(
-    (candle) => {
-        io.emit("price_update", candle);
-    },
-    (tick) => {
-        io.emit("tick", tick);  // raw tick, fires on every trade
-    }
-);
+async function start() {
+    console.log("[server] Warming quote cache...");
+    await warmQuoteCache();
+    console.log("[server] Quote cache warm — starting server");
 
-const PORT = process.env.PORT || 4000;
-httpServer.listen(PORT, () => {
-    console.log(`[server] Listening on port ${PORT}`);
-});
+    connectFinnhub(
+        (candle) => {
+            io.emit("price_update", candle);
+        },
+        (tick) => {
+            io.emit("tick", tick); // raw tick, fires on every trade
+        }
+    );
+
+    setInterval(warmQuoteCache, 60_000);
+
+    const PORT = process.env.PORT || 4000;
+    httpServer.listen(PORT, () => {
+        console.log(`[server] Listening on port ${PORT}`);
+    });
+}
+
+start();
