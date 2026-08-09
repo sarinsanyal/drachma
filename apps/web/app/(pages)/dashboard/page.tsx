@@ -224,8 +224,6 @@ function TopMovers({
 
 // ─── Watchlist ─────────────────────────────────────────────────────────────────
 
-const DEFAULT_WATCHLIST = ["NVDA", "TSLA", "AMZN"];
-
 function Watchlist({
     quotes, livePrices, ticks, marketOpen,
 }: {
@@ -234,39 +232,77 @@ function Watchlist({
     ticks: Record<string, number>;
     marketOpen: boolean;
 }) {
+    const supabase = createClient();
+    const [watchlist, setWatchlist] = useState<string[]>([]);
+    const [wlLoading, setWlLoading] = useState(true);
+
+    useEffect(() => {
+        const fetch = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) { setWlLoading(false); return; }
+
+            const { data } = await supabase
+                .from("watchlist")
+                .select("symbol")
+                .eq("user_id", user.id);
+
+            if (data) setWatchlist(data.map(r => r.symbol));
+            setWlLoading(false);
+        };
+        fetch();
+    }, []);
+
     return (
         <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/10">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-white/70">Watchlist</h2>
+                <Link href="/dashboard/stocks" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                    Manage →
+                </Link>
             </div>
             <div className="divide-y divide-white/5">
-                {DEFAULT_WATCHLIST.map((sym) => {
+                {wlLoading && (
+                    <div className="px-6 py-4 flex flex-col gap-3 animate-pulse">
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex justify-between">
+                                <div className="h-3 w-16 bg-white/10 rounded" />
+                                <div className="h-3 w-12 bg-white/10 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {!wlLoading && watchlist.length === 0 && (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8 px-6 text-center">
+                        <p className="text-white/30 text-xs">No stocks watched yet.</p>
+                        <Link href="/dashboard/stocks" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                            Browse markets →
+                        </Link>
+                    </div>
+                )}
+                {!wlLoading && watchlist.map((sym) => {
                     const q = quotes[sym];
                     if (!q) return (
-                        <div key={sym} className="px-6 py-3 text-xs text-white/30">Loading {sym}...</div>
+                        <div key={sym} className="px-6 py-3 text-xs text-white/30">{sym}</div>
                     );
 
                     const { price, change, changePct } = resolvePrice(sym, q, ticks, livePrices, marketOpen);
                     const up = change >= 0;
 
                     return (
-                        <div key={sym} className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors cursor-pointer">
+                        <Link key={sym} href={`/dashboard/stocks/${sym}`} className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors cursor-pointer">
                             <div>
                                 <p className="text-sm font-semibold text-white">{sym}</p>
                                 <p className="text-xs text-white/40">{q.name}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-semibold text-white">{formatCurrency(price)}</p>
+                                <p className="text-sm font-semibold text-white tabular-nums">{formatCurrency(price)}</p>
                                 <p className={`text-xs font-medium ${up ? "text-green-400" : "text-red-400"}`}>
                                     {up ? "+" : ""}{changePct.toFixed(2)}%
                                 </p>
                             </div>
-                        </div>
+                        </Link>
                     );
                 })}
-            </div>
-            <div className="px-6 py-3 border-t border-white/10">
-                <p className="text-xs text-white/30 italic">Customisable watchlist coming soon</p>
             </div>
         </div>
     );
@@ -357,10 +393,57 @@ export default function Dashboard() {
 
     const cashBalance = profile?.balance ?? 0;
 
+    //skeleton
     if (loading) {
         return (
-            <div className="min-h-screen text-white flex items-center justify-center">
-                <p className="text-white/40 text-sm">Loading your dashboard...</p>
+            <div className="min-h-screen text-white">
+                <DashboardNavbar />
+                <div className="px-4 py-6 md:px-8 lg:px-16">
+                    <div className="max-w-6xl mx-auto mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 flex flex-col gap-6">
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 animate-pulse">
+                                <div className="h-3 w-24 bg-white/10 rounded mb-4" />
+                                <div className="h-10 w-48 bg-white/10 rounded mb-3" />
+                                <div className="h-3 w-32 bg-white/10 rounded" />
+                            </div>
+                            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden animate-pulse">
+                                <div className="px-6 py-4 border-b border-white/10">
+                                    <div className="h-3 w-24 bg-white/10 rounded" />
+                                </div>
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-white/10" />
+                                            <div>
+                                                <div className="h-3 w-12 bg-white/10 rounded mb-2" />
+                                                <div className="h-2 w-20 bg-white/10 rounded" />
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="h-3 w-16 bg-white/10 rounded mb-2" />
+                                            <div className="h-2 w-10 bg-white/10 rounded" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-4">
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 animate-pulse">
+                                <div className="h-3 w-20 bg-white/10 rounded mb-4" />
+                                <div className="h-3 w-32 bg-white/10 rounded mb-2" />
+                                <div className="h-3 w-24 bg-white/10 rounded" />
+                            </div>
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 animate-pulse flex flex-col gap-4">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i}>
+                                        <div className="h-2 w-16 bg-white/10 rounded mb-2" />
+                                        <div className="h-5 w-24 bg-white/10 rounded" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

@@ -17,6 +17,7 @@ type Profile = {
 const NAV_LINKS = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/stocks", label: "Stocks" },
+    { href: "/dashboard/news", label: "News" },
     { href: "/blog", label: "Learn" },
 ];
 
