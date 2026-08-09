@@ -444,13 +444,13 @@ export default function Dashboard() {
 
                             {market.isOpen ? (
                                 <p className="text-xs text-white/50">
-                                    Closes at {formatLocalTime(market.closeUTC)} your time
+                                    Closes at {formatLocalTime(market.closeUTC)} local time
                                 </p>
                             ) : (
                                 <p className="text-xs text-white/50">
                                     {market.isWeekday
-                                        ? `Opens at ${formatLocalTime(market.openUTC)} your time`
-                                        : "Closed for the weekend"}
+                                        ? `Opens at ${formatLocalTime(market.openUTC)} local time`
+                                        : `Closed for the weekend, opens at ${formatLocalTime(market.openUTC)} local time`}
                                 </p>
                             )}
 

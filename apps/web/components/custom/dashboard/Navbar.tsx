@@ -17,7 +17,7 @@ type Profile = {
 const NAV_LINKS = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/dashboard/stocks", label: "Stocks" },
-    { href: "/dashboard/learn", label: "Learn" },
+    { href: "/blog", label: "Learn" },
 ];
 
 function getInitials(name: string) {
@@ -114,7 +114,7 @@ export default function DashboardNavbar() {
                         </button>
 
                         {dropdownOpen && (
-                            <div className="absolute right-0 top-12 w-56 bg-[#0a0a0f] border-2 border-blue-400/30 rounded-lg shadow-xl overflow-hidden">
+                            <div className="absolute right-0 top-12 w-56 bg-[#0a0a0f] border-2 border-blue-400/30 rounded-lg shadow-xl overflow-hidden z-1">
                                 {profile && (
                                     <div className="px-4 py-3 border-b border-white/10">
                                         <p className="text-sm font-bold text-white truncate">{profile.name}</p>
@@ -122,7 +122,7 @@ export default function DashboardNavbar() {
                                     </div>
                                 )}
                                 <Link
-                                    href={profile ? `/${profile.username}` : "#"}
+                                    href={profile ? `/@${profile.username}` : "#"}
                                     onClick={() => setDropdownOpen(false)}
                                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
                                 >
