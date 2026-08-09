@@ -101,7 +101,7 @@ export default function DashboardNavbar() {
                             onClick={() => setDropdownOpen((v) => !v)}
                             className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-white/5 transition-colors cursor-pointer"
                         >
-                            <div className="w-9 h-9 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center bg-white/10 flex-shrink-0">
+                            <div className="w-9 h-9 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center bg-white/10 shrink-0">
                                 {profile?.image_url ? (
                                     <img src={profile.image_url} alt={profile.name} className="w-full h-full object-cover" />
                                 ) : (
@@ -167,7 +167,7 @@ export default function DashboardNavbar() {
                     })}
 
                     <div className="flex items-center gap-3 mt-2 px-3">
-                        <div className="w-9 h-9 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center bg-white/10 flex-shrink-0">
+                        <div className="w-9 h-9 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center bg-white/10 shrink-0">
                             {profile?.image_url ? (
                                 <img src={profile.image_url} alt={profile.name} className="w-full h-full object-cover" />
                             ) : (
