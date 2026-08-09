@@ -30,7 +30,7 @@ export default function Use() {
     return (
         <section
             id="how-to-use"
-            className="py-32 relative z-10 bg-gradient-to-b from-[#0a0a1f] to-[#1a103c] animate-gradient"
+            className="py-32 relative z-10 bg-linear-to-b from-[#0a0a1f] to-[#1a103c] animate-gradient"
         >
             <div className="container mx-auto px-4">
                 <motion.div
@@ -62,7 +62,7 @@ export default function Use() {
                             viewport={{ once: true }}
                             className="bg-[#1a103c]/90 backdrop-blur-md p-10 rounded-3xl border border-white/10 shadow-2xl hover:shadow-blue-500/30 transition-shadow duration-300 cursor-pointer"
                         >
-                            <div className="text-gradient text-2xl font-bold mb-3 bg-clip-text bg-gradient-to-r from-[#38bdf8] to-[#818cf8]">
+                            <div className="text-gradient text-2xl font-bold mb-3 bg-clip-text bg-linear-to-r from-[#38bdf8] to-[#818cf8]">
                                 Step {index + 1}
                             </div>
                             <h3 className="text-xl font-semibold text-white mb-3 font-founder-grotesk">

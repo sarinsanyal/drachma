@@ -6,7 +6,6 @@ import dotenv from "dotenv";
 import { connectFinnhub } from "./lib/finnhub";
 import quotesRouter from "./routes/quotes";
 import { warmQuoteCache } from "./routes/quotes";
-import candlesRouter from "./routes/candles";
 
 dotenv.config();
 
@@ -24,7 +23,6 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/quotes", quotesRouter);
-app.use("/candles", candlesRouter);
 
 io.on("connection", (socket) => {
     console.log("[socket.io] Client connected:", socket.id);
