@@ -34,7 +34,7 @@ export default function What() {
   return (
     <section
       id="features"
-      className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0a0a1f] to-[#1a103c] relative z-10 text-white"
+      className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-linear-to-b from-[#0a0a1f] to-[#1a103c] relative z-10 text-white"
     >
       <div className="max-w-5xl mx-auto text-center">
         <motion.h1
@@ -70,7 +70,7 @@ export default function What() {
             viewport={{ once: true }}
             className="relative group"
           >
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#38bdf8]/40 to-[#818cf8]/40 rounded-xl blur opacity-20 group-hover:opacity-100 transition duration-700 group-hover:duration-300"></div>
+            <div className="absolute -inset-0.5 bg-linear-to-r from-[#38bdf8]/40 to-[#818cf8]/40 rounded-xl blur opacity-20 group-hover:opacity-100 transition duration-700 group-hover:duration-300"></div>
             <div className="relative bg-[#1a103c]/80 backdrop-blur-xl rounded-xl p-6 md:p-8 shadow-2xl border border-white/10 h-full cursor-pointer">
               <h3 className="text-xl font-bold text-white mb-3 font-founder-grotesk">
                 {feature.title}

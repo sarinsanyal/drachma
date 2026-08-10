@@ -25,6 +25,13 @@ type QuoteData = {
 type SortKey = "symbol" | "price" | "change" | "changePct" | "high" | "low";
 type SortDir = "asc" | "desc";
 
+type Holding = {
+    symbol: string;
+    qty: number;
+    avgCost: number;
+    totalCost: number;
+};
+
 function formatCurrency(n: number) {
     return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
@@ -137,34 +144,93 @@ function StocksPageSkeleton() {
     );
 }
 
-function HoldingsSidebar() {
+function HoldingsSidebar({
+    holdings,
+    quotes,
+    ticks,
+    livePrices,
+    marketOpen,
+}: {
+    holdings: Record<string, Holding>;
+    quotes: Record<string, QuoteData>;
+    ticks: Record<string, number>;
+    livePrices: Record<string, { close: number }>;
+    marketOpen: boolean;
+}) {
+    const entries = Object.values(holdings);
+    const invested = entries.reduce((sum, h) => sum + h.avgCost * h.qty, 0);
+    const currentValue = entries.reduce((sum, h) => {
+        const q = quotes[h.symbol];
+        const livePrice = marketOpen
+            ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
+            : (q?.price ?? h.avgCost);
+        return sum + livePrice * h.qty;
+    }, 0);
+    const totalPnl = currentValue - invested;
+    const up = totalPnl >= 0;
+
     return (
         <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/10">
                 <h3 className="text-sm font-bold text-white/70">Your Holdings</h3>
             </div>
-            <div className="flex flex-col items-center justify-center gap-2 py-10 px-5 text-center">
-                <p className="text-white/30 text-xs">No positions yet.</p>
-                <p className="text-white/20 text-xs">Buy a stock to see it here.</p>
-            </div>
-            <div className="px-5 py-3 border-t border-white/10 flex flex-col gap-2">
-                <div className="flex justify-between text-xs">
-                    <span className="text-white/40">Invested</span>
-                    <span className="text-white font-semibold">$0.00</span>
+
+            {entries.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-10 px-5 text-center">
+                    <p className="text-white/30 text-xs">No positions yet.</p>
+                    <p className="text-white/20 text-xs">Buy a stock to see it here.</p>
                 </div>
-                <div className="flex justify-between text-xs">
-                    <span className="text-white/40">Total P&L</span>
-                    <span className="text-white/50 font-semibold">$0.00</span>
+            ) : (
+                <div className="divide-y divide-white/5">
+                    {entries.map((h) => {
+                        const q = quotes[h.symbol];
+                        const livePrice = marketOpen
+                            ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
+                            : (q?.price ?? h.avgCost);
+                        const currentVal = livePrice * h.qty;
+                        const pnl = currentVal - h.avgCost * h.qty;
+                        const pnlUp = pnl >= 0;
+                        return (
+                            <div key={h.symbol} className="px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-semibold text-white">{h.symbol}</p>
+                                        <p className="text-xs text-white/40">{h.qty} shares @ {formatCurrency(h.avgCost)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold text-white tabular-nums">{formatCurrency(currentVal)}</p>
+                                        <p className={`text-xs font-medium ${pnlUp ? "text-green-400" : "text-red-400"}`}>
+                                            {pnlUp ? "+" : ""}{formatCurrency(pnl)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
-                <div className="flex justify-between text-xs">
-                    <span className="text-white/40">Positions</span>
-                    <span className="text-white font-semibold">0</span>
+            )}
+
+            <div className="px-5 py-3 border-t border-white/10">
+                <div className="grid grid-cols-3 text-xs text-center divide-x divide-white/10">
+                    <div className="px-2">
+                        <p className="text-white/40 mb-1">Invested</p>
+                        <p className="text-white font-semibold">{formatCurrency(invested)}</p>
+                    </div>
+                    <div className="px-2">
+                        <p className="text-white/40 mb-1">Total P&L</p>
+                        <p className={`font-semibold ${up ? "text-green-400" : "text-red-400"}`}>
+                            {up ? "+" : ""}{formatCurrency(totalPnl)}
+                        </p>
+                    </div>
+                    <div className="px-2">
+                        <p className="text-white/40 mb-1">Positions</p>
+                        <p className="text-white font-semibold">{entries.length}</p>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
-
 // ─── Sidebar: Watchlist ────────────────────────────────────────────────────────
 
 function WatchlistSidebar({
@@ -251,6 +317,8 @@ export default function StocksPage() {
     const [sortDir, setSortDir] = useState<SortDir>("desc");
     const [quotesLoading, setQuotesLoading] = useState(true);
     const [userId, setUserId] = useState<string | null>(null);
+    const [holdings, setHoldings] = useState<Record<string, Holding>>({});
+
     const [marketOpen] = useState(() => {
         const now = new Date();
         const et = new Intl.DateTimeFormat("en-US", {
@@ -275,6 +343,32 @@ export default function StocksPage() {
                 .eq("user_id", user.id);
 
             if (data) setWatchlist(new Set(data.map(r => r.symbol)));
+            const { data: trades } = await supabase
+                .from("trades")
+                .select("symbol, quantity, price, type")
+                .eq("profile_id", user.id);
+
+            if (trades) {
+                const map: Record<string, Holding> = {};
+                for (const trade of trades) {
+                    const qty = trade.type === "sell" ? -trade.quantity : trade.quantity;
+                    if (!map[trade.symbol]) {
+                        map[trade.symbol] = { symbol: trade.symbol, qty: 0, avgCost: 0, totalCost: 0 };
+                    }
+                    const h = map[trade.symbol];
+                    if (trade.type === "buy") {
+                        h.totalCost += trade.price * trade.quantity;
+                        h.qty += trade.quantity;
+                        h.avgCost = h.totalCost / h.qty;
+                    } else {
+                        h.qty += qty;
+                    }
+                }
+                for (const sym of Object.keys(map)) {
+                    if (map[sym].qty <= 0) delete map[sym];
+                }
+                setHoldings(map);
+            }
             setPageLoading(false);
         };
         init();
@@ -370,7 +464,7 @@ export default function StocksPage() {
         });
 
     if (pageLoading || quotesLoading) return <StocksPageSkeleton />;
-    
+
     return (
         <div className="min-h-screen text-white">
             <DashboardNavbar />
@@ -515,7 +609,13 @@ export default function StocksPage() {
 
                         {/* ── Right: sidebar ── */}
                         <div className="flex flex-col gap-4">
-                            <HoldingsSidebar />
+                            <HoldingsSidebar
+                                holdings={holdings}
+                                quotes={quotes}
+                                ticks={ticks}
+                                livePrices={livePrices}
+                                marketOpen={marketOpen}
+                            />
                             <WatchlistSidebar
                                 watchlist={watchlist}
                                 quotes={quotes}

@@ -20,6 +20,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.112.2
+        version: 2.112.2
       '@upstash/redis':
         specifier: ^1.38.2
         version: 1.38.2

@@ -6,17 +6,18 @@ import { createClient } from "@/lib/supabase/client";
 import { useLivePrices } from "@/lib/hooks/useLivePrices";
 import DashboardNavbar from "@/components/custom/dashboard/Navbar";
 import {
-  createChart,
-  ColorType,
-  CrosshairMode,
-  CandlestickSeries,
-  type IChartApi,
-  type ISeriesApi,
-  type CandlestickData,
-  type Time,
+    createChart,
+    ColorType,
+    CrosshairMode,
+    CandlestickSeries,
+    type IChartApi,
+    type ISeriesApi,
+    type CandlestickData,
+    type Time,
 } from "lightweight-charts";
 import { FiArrowLeft, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { toast, Toaster } from "sonner";
 
 
 type QuoteData = {
@@ -141,6 +142,79 @@ export default function StockDetailPage() {
     const [userId, setUserId] = useState<string | null>(null);
     const [qty, setQty] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
+    const [submitting, setSubmitting] = useState(false);
+    const [holding, setHolding] = useState<{ qty: number; avgCost: number } | null>(null);
+
+    const fetchHolding = async (uid: string) => {
+        const { data } = await supabase
+            .from("trades")
+            .select("quantity, price, type")
+            .eq("profile_id", uid)
+            .eq("symbol", symbol);
+
+        if (!data || data.length === 0) { setHolding(null); return; }
+
+        let qty = 0;
+        let totalCost = 0;
+        for (const t of data) {
+            if (t.type === "buy") {
+                totalCost += t.price * t.quantity;
+                qty += t.quantity;
+            } else {
+                qty -= t.quantity;
+            }
+        }
+        setHolding(qty > 0 ? { qty, avgCost: totalCost / (qty + data.filter(t => t.type === "sell").reduce((s, t) => s + t.quantity, 0)) } : null);
+    };
+
+    const handleTrade = async () => {
+        setSubmitting(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                toast.error("You need to be logged in to trade.");
+                return;
+            }
+            if (orderType === "sell") {
+                const currentQty = holding?.qty ?? 0;
+                if (currentQty === 0) {
+                    toast.error("You don't hold any shares of this stock.");
+                    setSubmitting(false);
+                    return;
+                }
+                if (qty > currentQty) {
+                    toast.error(`You only hold ${currentQty} share${currentQty > 1 ? "s" : ""}. Can't sell ${qty}.`);
+                    setSubmitting(false);
+                    return;
+                }
+            }
+            const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/trade`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ symbol, quantity: qty, type: orderType }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                toast.error(data.error || "Trade failed");
+                return;
+            }
+
+            toast.success(`${orderType === "buy" ? "Bought" : "Sold"} ${qty} share${qty > 1 ? "s" : ""} of ${symbol}`);
+            setQty(1);
+            if (userId) await fetchHolding(userId);
+        } catch (err) {
+            console.error("[trade] Failed:", err);
+            toast.error("Something went wrong placing the trade");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const marketOpen = (() => {
         const now = new Date();
@@ -177,6 +251,7 @@ export default function StockDetailPage() {
                 .single();
 
             setWatched(!!data);
+            await fetchHolding(user.id);
         };
         init();
     }, [symbol]);
@@ -326,6 +401,7 @@ export default function StockDetailPage() {
     return (
         <div className="min-h-screen text-white">
             <DashboardNavbar />
+            <Toaster />
 
             <div className="px-4 py-6 md:px-8 lg:px-16">
                 <div className="max-w-6xl mx-auto">
@@ -420,18 +496,63 @@ export default function StockDetailPage() {
                                 <h2 className="text-sm font-bold text-white/70 mb-4">Place Order</h2>
 
                                 {/* Buy/Sell tabs */}
+                                {/* Current holding */}
+                                {holding && (
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+                                        <p className="text-xs text-white/40 mb-2">Your Position</p>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-bold text-white">{holding.qty} shares</p>
+                                                <p className="text-xs text-white/40">avg {formatCurrency(holding.avgCost)}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-white tabular-nums">
+                                                    {formatCurrency(holding.qty * livePrice)}
+                                                </p>
+                                                {(() => {
+                                                    const pnl = (livePrice - holding.avgCost) * holding.qty;
+                                                    const pnlUp = pnl >= 0;
+                                                    return (
+                                                        <p className={`text-xs font-medium ${pnlUp ? "text-green-400" : "text-red-400"}`}>
+                                                            {pnlUp ? "+" : ""}{formatCurrency(pnl)}
+                                                        </p>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Buy/Sell tabs */}
                                 <div className="flex rounded-xl overflow-hidden border border-white/10 mb-5">
-                                    <button className="flex-1 py-2.5 text-sm font-semibold bg-green-500/20 text-green-400 border-r border-white/10">
+                                    <button
+                                        onClick={() => setOrderType("buy")}
+                                        className={`flex-1 py-2.5 text-sm font-semibold border-r border-white/10 transition-colors ${orderType === "buy" ? "bg-green-500/20 text-green-400" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                                    >
                                         Buy
                                     </button>
-                                    <button className="flex-1 py-2.5 text-sm font-semibold text-white/40 hover:text-white hover:bg-white/5 transition-colors">
+                                    <button
+                                        onClick={() => setOrderType("sell")}
+                                        disabled={!holding}
+                                        className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${orderType === "sell" ? "bg-red-500/20 text-red-400" : "text-white/40 hover:text-white hover:bg-white/5"} ${!holding ? "opacity-30 cursor-not-allowed" : ""}`}
+                                    >
                                         Sell
                                     </button>
                                 </div>
 
                                 {/* Qty */}
                                 <div className="mb-4">
-                                    <p className="text-xs text-white/40 mb-2">Quantity</p>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs text-white/40">Quantity</p>
+                                        {orderType === "sell" && holding && (
+                                            <button
+                                                onClick={() => setQty(holding.qty)}
+                                                className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                                            >
+                                                Max ({holding.qty})
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setQty(q => Math.max(1, q - 1))}
@@ -442,12 +563,13 @@ export default function StockDetailPage() {
                                         <input
                                             type="number"
                                             min={1}
+                                            max={orderType === "sell" ? holding?.qty : undefined}
                                             value={qty}
                                             onChange={e => setQty(Math.max(1, Number(e.target.value)))}
                                             className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-center text-white text-sm focus:outline-none focus:border-purple-500"
                                         />
                                         <button
-                                            onClick={() => setQty(q => q + 1)}
+                                            onClick={() => setQty(q => orderType === "sell" && holding ? Math.min(q + 1, holding.qty) : q + 1)}
                                             className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white font-bold"
                                         >
                                             +
@@ -472,12 +594,15 @@ export default function StockDetailPage() {
                                 </div>
 
                                 <button
-                                    disabled
-                                    className="w-full py-3 rounded-xl bg-green-500/30 text-green-400 font-bold text-sm cursor-not-allowed border border-green-500/20"
+                                    onClick={handleTrade}
+                                    disabled={submitting}
+                                    className={`w-full py-3 rounded-xl font-bold text-sm border transition-colors ${orderType === "buy"
+                                        ? "bg-green-500/30 text-green-400 border-green-500/20 hover:bg-green-500/40"
+                                        : "bg-red-500/30 text-red-400 border-red-500/20 hover:bg-red-500/40"
+                                        } ${submitting ? "opacity-50 cursor-not-allowed" : ""}`}
                                 >
-                                    Buy {symbol}
+                                    {submitting ? "Placing order..." : `${orderType === "buy" ? "Buy" : "Sell"} ${symbol}`}
                                 </button>
-                                <p className="text-center text-white/20 text-xs mt-3">Trading coming soon</p>
                             </div>
                         </div>
                     </div>

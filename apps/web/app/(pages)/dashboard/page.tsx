@@ -38,6 +38,13 @@ type Profile = {
     balance: number;
 };
 
+type Holding = {
+    symbol: string;
+    qty: number;
+    avgCost: number;
+    totalCost: number;
+};
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatCurrency(n: number) {
@@ -311,14 +318,102 @@ function Watchlist({
 // ─── Recent Activity ───────────────────────────────────────────────────────────
 
 function RecentActivity() {
+    const supabase = createClient();
+    const [trades, setTrades] = useState<{
+        id: number;
+        symbol: string;
+        quantity: number;
+        price: number;
+        type: string;
+        created_at: string;
+    }[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetch = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) { setLoading(false); return; }
+
+            const { data } = await supabase
+                .from("trades")
+                .select("id, symbol, quantity, price, type, created_at")
+                .eq("profile_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(10);
+
+            if (data) setTrades(data);
+            setLoading(false);
+        };
+        fetch();
+    }, []);
+
     return (
         <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10">
                 <h2 className="text-lg font-bold">Recent Activity</h2>
             </div>
-            <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
-                <p className="text-white/30 text-xs">No trades yet. Your activity will appear here.</p>
-            </div>
+
+            {loading && (
+                <div className="divide-y divide-white/5 animate-pulse">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="flex items-center justify-between px-6 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-white/10" />
+                                <div>
+                                    <div className="h-3 w-16 bg-white/10 rounded mb-2" />
+                                    <div className="h-2 w-24 bg-white/10 rounded" />
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="h-3 w-16 bg-white/10 rounded mb-2 ml-auto" />
+                                <div className="h-2 w-10 bg-white/10 rounded ml-auto" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {!loading && trades.length === 0 && (
+                <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
+                    <p className="text-white/30 text-xs">No trades yet. Your activity will appear here.</p>
+                </div>
+            )}
+
+            {!loading && trades.length > 0 && (
+                <div className="divide-y divide-white/5">
+                    {trades.map((t) => {
+                        const isBuy = t.type === "buy";
+                        const total = t.quantity * t.price;
+                        const date = new Date(t.created_at);
+                        const label = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+                        const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+                        return (
+                            <div key={t.id} className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isBuy ? "bg-green-400/10 text-green-400" : "bg-red-400/10 text-red-400"}`}>
+                                        {isBuy ? "B" : "S"}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-white">
+                                            {isBuy ? "Bought" : "Sold"} {t.symbol}
+                                        </p>
+                                        <p className="text-xs text-white/40">
+                                            {t.quantity} shares @ {formatCurrency(t.price)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`text-sm font-semibold ${isBuy ? "text-red-400" : "text-green-400"}`}>
+                                        {isBuy ? "-" : "+"}{formatCurrency(total)}
+                                    </p>
+                                    <p className="text-xs text-white/40">{label} · {time}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
@@ -335,6 +430,14 @@ export default function Dashboard() {
     const [quotesLoading, setQuotesLoading] = useState(true);
     const [market, setMarket] = useState(getMarketStatus());
     const [countdown, setCountdown] = useState("");
+
+    // useEffect(() => {
+    //     const logToken = async () => {
+    //         const { data } = await supabase.auth.getSession();
+    //         console.log("ACCESS TOKEN:", data.session?.access_token);
+    //     };
+    //     logToken();
+    // }, []);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -391,7 +494,62 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [market]);
 
+    const [holdings, setHoldings] = useState<Record<string, Holding>>({});
+
+    useEffect(() => {
+        const fetchHoldings = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from("trades")
+                .select("symbol, quantity, price, type")
+                .eq("profile_id", user.id);
+
+            if (error || !data) return;
+
+            const map: Record<string, Holding> = {};
+            for (const trade of data) {
+                const qty = trade.type === "sell" ? -trade.quantity : trade.quantity;
+                if (!map[trade.symbol]) {
+                    map[trade.symbol] = { symbol: trade.symbol, qty: 0, avgCost: 0, totalCost: 0 };
+                }
+                const h = map[trade.symbol];
+                if (trade.type === "buy") {
+                    h.totalCost += trade.price * trade.quantity;
+                    h.qty += qty;
+                    h.avgCost = h.totalCost / h.qty;
+                } else {
+                    h.qty += qty; // negative
+                    // avgCost stays the same on sells
+                }
+            }
+
+            // drop fully closed positions
+            for (const sym of Object.keys(map)) {
+                if (map[sym].qty <= 0) delete map[sym];
+            }
+
+            setHoldings(map);
+        };
+        fetchHoldings();
+    }, []);
+
     const cashBalance = profile?.balance ?? 0;
+
+    const invested = Object.values(holdings).reduce((sum, h) => sum + h.avgCost * h.qty, 0);
+
+    const currentValue = Object.values(holdings).reduce((sum, h) => {
+        const q = quotes[h.symbol];
+        const livePrice = market.isOpen
+            ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
+            : (q?.price ?? h.avgCost);
+        return sum + livePrice * h.qty;
+    }, 0);
+
+    const totalPnl = currentValue - invested;
+    const totalPnlPct = invested > 0 ? (totalPnl / invested) * 100 : 0;
+    const portfolioValue = cashBalance + currentValue;
 
     //skeleton
     if (loading) {
@@ -478,38 +636,86 @@ export default function Dashboard() {
 
                         <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl p-8">
                             <p className="text-white/50 text-sm mb-1">Your portfolio</p>
-                            <h1 className="text-4xl lg:text-5xl font-extrabold mb-2">{formatCurrency(cashBalance)}</h1>
-                            <div className="flex items-center gap-2 text-sm text-white/40">
-                                <FiTrendingUp />
-                                <span>+$0.00 (0.00%) all time</span>
+                            <h1 className="text-4xl lg:text-5xl font-extrabold mb-2">{formatCurrency(portfolioValue)}</h1>
+                            <div className={`flex items-center gap-2 text-sm mb-6 ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                                {totalPnl >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                                <span>{totalPnl >= 0 ? "+" : ""}{formatCurrency(totalPnl)} ({totalPnl >= 0 ? "+" : ""}{totalPnlPct.toFixed(2)}%) all time</span>
+                            </div>
+                            <div className="flex items-center gap-4 pt-4 border-t border-white/10">
+                                <div>
+                                    <p className="text-white/40 text-xs mb-1">Cash</p>
+                                    <p className="text-base font-semibold">{formatCurrency(cashBalance)}</p>
+                                </div>
+                                <div className="w-px h-8 bg-white/10" />
+                                <div>
+                                    <p className="text-white/40 text-xs mb-1">Invested</p>
+                                    <p className="text-base font-semibold">{formatCurrency(invested)}</p>
+                                </div>
+                                <div className="w-px h-8 bg-white/10" />
+                                <div>
+                                    <p className="text-white/40 text-xs mb-1">P&L</p>
+                                    <p className={`text-base font-semibold ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                                        {totalPnl >= 0 ? "+" : ""}{formatCurrency(totalPnl)}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
+
+                        <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
+                            <div className="px-6 py-4 border-b border-white/10">
+                                <h2 className="text-lg font-bold">Holdings</h2>
+                            </div>
+                            <div className="divide-y divide-white/5">
+                                {Object.keys(holdings).length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
+                                        <p className="text-white/50 text-sm max-w-sm">
+                                            You don't own any stocks yet. Browse the market and make your first trade.
+                                        </p>
+                                        <Link href="/dashboard/stocks" className="flex items-center gap-2 mt-2 bg-purple-700 hover:bg-purple-800 transition-colors text-white font-semibold px-5 py-2.5 rounded-lg">
+                                            <PiPlusCircle size={18} />
+                                            Browse stocks
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    Object.values(holdings).map((h) => {
+                                        const q = quotes[h.symbol];
+                                        const livePrice = market.isOpen
+                                            ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
+                                            : (q?.price ?? h.avgCost);
+                                        const currentVal = livePrice * h.qty;
+                                        const pnl = currentVal - h.avgCost * h.qty;
+                                        const pnlPct = (pnl / (h.avgCost * h.qty)) * 100;
+                                        const up = pnl >= 0;
+                                        return (
+                                            <Link key={h.symbol} href={`/dashboard/stocks/${h.symbol}`} className="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold text-white/80">
+                                                        {h.symbol.slice(0, 2)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-white">{h.symbol}</p>
+                                                        <p className="text-xs text-white/40">{h.qty} shares @ {formatCurrency(h.avgCost)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-semibold text-white tabular-nums">{formatCurrency(currentVal)}</p>
+                                                    <p className={`text-xs font-medium ${up ? "text-green-400" : "text-red-400"}`}>
+                                                        {up ? "+" : ""}{formatCurrency(pnl)} ({up ? "+" : ""}{pnlPct.toFixed(2)}%)
+                                                    </p>
+                                                </div>
+                                            </Link>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
                         <TopMovers
                             quotes={quotes}
                             livePrices={livePrices}
                             ticks={ticks}
                             marketOpen={market.isOpen}
                         />
-
-                        <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
-                            <div className="px-6 py-4 border-b border-white/10">
-                                <h2 className="text-lg font-bold">Holdings</h2>
-                            </div>
-                            <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
-                                <p className="text-white/50 text-sm max-w-sm">
-                                    You don't own any stocks yet. Browse the market and make your first trade.
-                                </p>
-                                <Link
-                                    href="/dashboard/stocks"
-                                    className="flex items-center gap-2 mt-2 bg-purple-700 hover:bg-purple-800 transition-colors text-white font-semibold px-5 py-2.5 rounded-lg"
-                                >
-                                    <PiPlusCircle size={18} />
-                                    Browse stocks
-                                </Link>
-                            </div>
-                        </div>
-
                         <RecentActivity />
                     </div>
 
@@ -561,15 +767,15 @@ export default function Dashboard() {
                             </div>
                             <div>
                                 <p className="text-white/40 text-xs mb-1">Invested</p>
-                                <p className="text-xl font-bold">{formatCurrency(0)}</p>
+                                <p className="text-xl font-bold">{formatCurrency(invested)}</p>
                             </div>
                             <div>
                                 <p className="text-white/40 text-xs mb-1">Total P&L</p>
-                                <p className="text-xl font-bold text-white/50">$0.00</p>
+                                <p className={`text-xl font-bold ${totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>{totalPnl >= 0 ? "+" : ""}{formatCurrency(totalPnl)}</p>
                             </div>
                             <div>
                                 <p className="text-white/40 text-xs mb-1">Positions</p>
-                                <p className="text-xl font-bold">0</p>
+                                <p className="text-xl font-bold">{Object.keys(holdings).length}</p>
                             </div>
                         </div>
 

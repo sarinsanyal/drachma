@@ -4,8 +4,10 @@ import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectFinnhub } from "./lib/finnhub";
+
 import quotesRouter from "./routes/quotes";
 import { warmQuoteCache } from "./routes/quotes";
+import tradeRouter from "./routes/trade";
 
 dotenv.config();
 
@@ -23,6 +25,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/quotes", quotesRouter);
+app.use("/api/trade", tradeRouter);
 
 io.on("connection", (socket) => {
     console.log("[socket.io] Client connected:", socket.id);
