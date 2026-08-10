@@ -478,7 +478,7 @@ export default function Dashboard() {
 
                         <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl p-8">
                             <p className="text-white/50 text-sm mb-1">Your portfolio</p>
-                            <h1 className="text-5xl font-extrabold mb-2">{formatCurrency(cashBalance)}</h1>
+                            <h1 className="text-4xl lg:text-5xl font-extrabold mb-2">{formatCurrency(cashBalance)}</h1>
                             <div className="flex items-center gap-2 text-sm text-white/40">
                                 <FiTrendingUp />
                                 <span>+$0.00 (0.00%) all time</span>
