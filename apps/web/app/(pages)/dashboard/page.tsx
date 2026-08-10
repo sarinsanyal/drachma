@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Toaster } from "sonner";
-import { FiTrendingUp, FiTrendingDown } from "react-icons/fi";
+import { FiTrendingUp, FiTrendingDown, FiRss, FiExternalLink, FiClock } from "react-icons/fi";
 import { PiPlusCircle } from "react-icons/pi";
 import Link from "next/link";
 import { useLivePrices } from "@/lib/hooks/useLivePrices";
@@ -418,6 +418,74 @@ function RecentActivity() {
     );
 }
 
+// ─── Market News (Max 2 Items) ───────────────────────────────────────────────
+
+function MarketNews() {
+    const [news, setNews] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchNews() {
+            const apiKey = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
+            if (!apiKey) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${apiKey}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setNews(data.slice(0, 2)); // Limits output to MAX 2 news items
+                }
+            } catch (err) {
+                console.error("Failed to fetch news:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchNews();
+    }, []);
+
+    return (
+        <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <FiRss size={15} className="text-purple-400" />
+                    <h2 className="text-sm font-bold text-white/70">Latest News</h2>
+                </div>
+                <Link href="/dashboard/news" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                    View all →
+                </Link>
+            </div>
+
+            <div className="divide-y divide-white/5">
+                {loading && <p className="text-xs text-white/30 px-6 py-4">Loading market news...</p>}
+                {!loading && news.length === 0 && <p className="text-xs text-white/30 px-6 py-4">No headlines available.</p>}
+                {!loading && news.map((item) => (
+                    <a
+                        key={item.id}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-6 py-3.5 hover:bg-white/5 transition-colors group"
+                    >
+                        <div className="flex items-center justify-between text-[11px] text-white/40 mb-1">
+                            <span className="font-semibold text-white/60">{item.source}</span>
+                            <span className="flex items-center gap-1">
+                                <FiClock size={10} />
+                                {new Date(item.datetime * 1000).toLocaleDateString()}
+                            </span>
+                        </div>
+                        <h3 className="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors line-clamp-1 mb-0.5">
+                            {item.headline}
+                        </h3>
+                        <p className="text-[11px] text-white/40 line-clamp-2">{item.summary}</p>
+                    </a>
+                ))}
+            </div>
+        </div>
+    );
+}
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -785,6 +853,8 @@ export default function Dashboard() {
                             ticks={ticks}
                             marketOpen={market.isOpen}
                         />
+
+                        <MarketNews />
                     </div>
                 </div>
             </div>
