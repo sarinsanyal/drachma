@@ -18,7 +18,7 @@ import {
 import { FiArrowLeft, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { toast, Toaster } from "sonner";
-
+import { getMarketStatus } from "@/lib/hooks/market";
 
 type QuoteData = {
     symbol: string;
@@ -145,6 +145,14 @@ export default function StockDetailPage() {
     const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
     const [submitting, setSubmitting] = useState(false);
     const [holding, setHolding] = useState<{ qty: number; avgCost: number } | null>(null);
+    const [market, setMarket] = useState(() => getMarketStatus());
+
+    useEffect(() => {
+        const interval = setInterval(() => setMarket(getMarketStatus()), 60_000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const marketOpen = market.isOpen;
 
     const fetchHolding = async (uid: string) => {
         const { data } = await supabase
@@ -157,18 +165,28 @@ export default function StockDetailPage() {
 
         let qty = 0;
         let totalCost = 0;
+        let avgCost = 0;
+
         for (const t of data) {
             if (t.type === "buy") {
                 totalCost += t.price * t.quantity;
                 qty += t.quantity;
+                avgCost = totalCost / qty;
             } else {
+                totalCost -= avgCost * t.quantity;
                 qty -= t.quantity;
             }
         }
-        setHolding(qty > 0 ? { qty, avgCost: totalCost / (qty + data.filter(t => t.type === "sell").reduce((s, t) => s + t.quantity, 0)) } : null);
-    };
 
+        setHolding(qty > 0 ? { qty, avgCost } : null);
+    };
     const handleTrade = async () => {
+        // Block if market closed
+        if (!marketOpen) {
+            toast.error("Market is closed. Trading is only available during market hours.");
+            return;
+        }
+
         setSubmitting(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -215,18 +233,6 @@ export default function StockDetailPage() {
             setSubmitting(false);
         }
     };
-
-    const marketOpen = (() => {
-        const now = new Date();
-        const et = new Intl.DateTimeFormat("en-US", {
-            timeZone: "America/New_York",
-            hour: "2-digit", minute: "2-digit", hour12: false, weekday: "short",
-        }).formatToParts(now);
-        const get = (t: string) => et.find(p => p.type === t)?.value || "";
-        const mins = Number(get("hour")) * 60 + Number(get("minute"));
-        const wd = get("weekday");
-        return wd !== "Sat" && wd !== "Sun" && mins >= 570 && mins < 960;
-    })();
 
     const livePrice = marketOpen
         ? (ticks[symbol] ?? livePrices[symbol]?.close ?? quote?.price ?? 0)
@@ -376,9 +382,10 @@ export default function StockDetailPage() {
 
     const toggleWatchlist = async () => {
         if (!userId) return;
-        setWatched(w => !w);
+        const nowWatched = !watched; 
+        setWatched(nowWatched);
 
-        if (watched) {
+        if (!nowWatched) {
             await supabase.from("watchlist").delete()
                 .eq("user_id", userId).eq("symbol", symbol);
         } else {
@@ -495,7 +502,6 @@ export default function StockDetailPage() {
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sticky top-6">
                                 <h2 className="text-sm font-bold text-white/70 mb-4">Place Order</h2>
 
-                                {/* Buy/Sell tabs */}
                                 {/* Current holding */}
                                 {holding && (
                                     <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
@@ -527,14 +533,15 @@ export default function StockDetailPage() {
                                 <div className="flex rounded-xl overflow-hidden border border-white/10 mb-5">
                                     <button
                                         onClick={() => setOrderType("buy")}
-                                        className={`flex-1 py-2.5 text-sm font-semibold border-r border-white/10 transition-colors ${orderType === "buy" ? "bg-green-500/20 text-green-400" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                                        disabled={!marketOpen}
+                                        className={`flex-1 py-2.5 text-sm font-semibold border-r border-white/10 transition-colors ${orderType === "buy" ? "bg-green-500/20 text-green-400" : "text-white/40 hover:text-white hover:bg-white/5"} ${!marketOpen ? "opacity-40 cursor-not-allowed" : ""}`}
                                     >
                                         Buy
                                     </button>
                                     <button
                                         onClick={() => setOrderType("sell")}
-                                        disabled={!holding}
-                                        className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${orderType === "sell" ? "bg-red-500/20 text-red-400" : "text-white/40 hover:text-white hover:bg-white/5"} ${!holding ? "opacity-30 cursor-not-allowed" : ""}`}
+                                        disabled={!holding || !marketOpen}
+                                        className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${orderType === "sell" ? "bg-red-500/20 text-red-400" : "text-white/40 hover:text-white hover:bg-white/5"} ${(!holding || !marketOpen) ? "opacity-40 cursor-not-allowed" : ""}`}
                                     >
                                         Sell
                                     </button>
@@ -547,7 +554,8 @@ export default function StockDetailPage() {
                                         {orderType === "sell" && holding && (
                                             <button
                                                 onClick={() => setQty(holding.qty)}
-                                                className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                                                disabled={!marketOpen}
+                                                className={`text-xs text-purple-400 hover:text-purple-300 transition-colors ${!marketOpen ? "opacity-40 cursor-not-allowed" : ""}`}
                                             >
                                                 Max ({holding.qty})
                                             </button>
@@ -556,7 +564,8 @@ export default function StockDetailPage() {
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setQty(q => Math.max(1, q - 1))}
-                                            className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white font-bold"
+                                            disabled={!marketOpen}
+                                            className={`w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white font-bold ${!marketOpen ? "opacity-40 cursor-not-allowed" : ""}`}
                                         >
                                             −
                                         </button>
@@ -566,11 +575,13 @@ export default function StockDetailPage() {
                                             max={orderType === "sell" ? holding?.qty : undefined}
                                             value={qty}
                                             onChange={e => setQty(Math.max(1, Number(e.target.value)))}
-                                            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-center text-white text-sm focus:outline-none focus:border-purple-500"
+                                            disabled={!marketOpen}
+                                            className={`flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-center text-white text-sm focus:outline-none focus:border-purple-500 ${!marketOpen ? "opacity-40 cursor-not-allowed" : ""}`}
                                         />
                                         <button
                                             onClick={() => setQty(q => orderType === "sell" && holding ? Math.min(q + 1, holding.qty) : q + 1)}
-                                            className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white font-bold"
+                                            disabled={!marketOpen}
+                                            className={`w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white font-bold ${!marketOpen ? "opacity-40 cursor-not-allowed" : ""}`}
                                         >
                                             +
                                         </button>
@@ -595,14 +606,17 @@ export default function StockDetailPage() {
 
                                 <button
                                     onClick={handleTrade}
-                                    disabled={submitting}
+                                    disabled={submitting || !marketOpen}
                                     className={`w-full py-3 rounded-xl font-bold text-sm border transition-colors ${orderType === "buy"
                                         ? "bg-green-500/30 text-green-400 border-green-500/20 hover:bg-green-500/40"
                                         : "bg-red-500/30 text-red-400 border-red-500/20 hover:bg-red-500/40"
-                                        } ${submitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                                        } ${(submitting || !marketOpen) ? "opacity-50 cursor-not-allowed" : ""}`}
                                 >
-                                    {submitting ? "Placing order..." : `${orderType === "buy" ? "Buy" : "Sell"} ${symbol}`}
+                                    {!marketOpen ? "Market Closed" : submitting ? "Placing order..." : `${orderType === "buy" ? "Buy" : "Sell"} ${symbol}`}
                                 </button>
+                                {!marketOpen && (
+                                    <p className="text-center text-xs text-white/30 mt-2">Trading is only available during market hours (9:30 AM – 4:00 PM ET).</p>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -8,7 +8,7 @@ import { FiTrendingUp, FiTrendingDown, FiSearch } from "react-icons/fi";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { PiPlusCircle } from "react-icons/pi";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { getMarketStatus } from "@/lib/hooks/market";
 
 type QuoteData = {
     symbol: string;
@@ -30,6 +30,11 @@ type Holding = {
     qty: number;
     avgCost: number;
     totalCost: number;
+};
+
+type Profile = {
+    id: string;
+    balance: number;
 };
 
 function formatCurrency(n: number) {
@@ -144,18 +149,26 @@ function StocksPageSkeleton() {
     );
 }
 
+// ─── Holdings Sidebar (now shows All‑time P&L) ──────────────────────────────
+
 function HoldingsSidebar({
     holdings,
     quotes,
     ticks,
     livePrices,
     marketOpen,
+    cashBalance,
+    totalPnl,
+    totalPnlUp,
 }: {
     holdings: Record<string, Holding>;
     quotes: Record<string, QuoteData>;
     ticks: Record<string, number>;
     livePrices: Record<string, { close: number }>;
     marketOpen: boolean;
+    cashBalance: number; // current cash balance
+    totalPnl: number;    // all‑time P&L = (cash + holdings) - initialBalance
+    totalPnlUp: boolean; // is it positive?
 }) {
     const entries = Object.values(holdings);
     const invested = entries.reduce((sum, h) => sum + h.avgCost * h.qty, 0);
@@ -166,8 +179,6 @@ function HoldingsSidebar({
             : (q?.price ?? h.avgCost);
         return sum + livePrice * h.qty;
     }, 0);
-    const totalPnl = currentValue - invested;
-    const up = totalPnl >= 0;
 
     return (
         <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-2xl overflow-hidden">
@@ -217,9 +228,9 @@ function HoldingsSidebar({
                         <p className="text-white font-semibold">{formatCurrency(invested)}</p>
                     </div>
                     <div className="px-2">
-                        <p className="text-white/40 mb-1">Total P&L</p>
-                        <p className={`font-semibold ${up ? "text-green-400" : "text-red-400"}`}>
-                            {up ? "+" : ""}{formatCurrency(totalPnl)}
+                        <p className="text-white/40 mb-1">All‑time P&L</p>
+                        <p className={`font-semibold ${totalPnlUp ? "text-green-400" : "text-red-400"}`}>
+                            {totalPnlUp ? "+" : ""}{formatCurrency(totalPnl)}
                         </p>
                     </div>
                     <div className="px-2">
@@ -231,6 +242,7 @@ function HoldingsSidebar({
         </div>
     );
 }
+
 // ─── Sidebar: Watchlist ────────────────────────────────────────────────────────
 
 function WatchlistSidebar({
@@ -318,18 +330,20 @@ export default function StocksPage() {
     const [quotesLoading, setQuotesLoading] = useState(true);
     const [userId, setUserId] = useState<string | null>(null);
     const [holdings, setHoldings] = useState<Record<string, Holding>>({});
+    const [profile, setProfile] = useState<Profile | null>(null);
 
-    const [marketOpen] = useState(() => {
-        const now = new Date();
-        const et = new Intl.DateTimeFormat("en-US", {
-            timeZone: "America/New_York",
-            hour: "2-digit", minute: "2-digit", hour12: false, weekday: "short",
-        }).formatToParts(now);
-        const get = (t: string) => et.find(p => p.type === t)?.value || "";
-        const weekday = get("weekday");
-        const mins = Number(get("hour")) * 60 + Number(get("minute"));
-        return weekday !== "Sat" && weekday !== "Sun" && mins >= 570 && mins < 960;
-    });
+    // Replace the useState marketOpen with:
+    const [market, setMarket] = useState(() => getMarketStatus()); // import from dashboard or extract to a shared util
+
+    useEffect(() => {
+        const interval = setInterval(() => setMarket(getMarketStatus()), 60_000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const marketOpen = market.isOpen;
+
+    // 👇 Define your initial starting balance (adjust as needed)
+    const INITIAL_BALANCE = 10000;
 
     useEffect(() => {
         const init = async () => {
@@ -337,12 +351,22 @@ export default function StocksPage() {
             if (!user) return;
             setUserId(user.id);
 
-            const { data } = await supabase
+            // Fetch profile
+            const { data: profileData } = await supabase
+                .from("profiles")
+                .select("id, balance")
+                .eq("id", user.id)
+                .single();
+            if (profileData) setProfile(profileData);
+
+            // Watchlist
+            const { data: wlData } = await supabase
                 .from("watchlist")
                 .select("symbol")
                 .eq("user_id", user.id);
+            if (wlData) setWatchlist(new Set(wlData.map(r => r.symbol)));
 
-            if (data) setWatchlist(new Set(data.map(r => r.symbol)));
+            // Trades → holdings
             const { data: trades } = await supabase
                 .from("trades")
                 .select("symbol, quantity, price, type")
@@ -358,9 +382,10 @@ export default function StocksPage() {
                     const h = map[trade.symbol];
                     if (trade.type === "buy") {
                         h.totalCost += trade.price * trade.quantity;
-                        h.qty += trade.quantity;
+                        h.qty += qty;
                         h.avgCost = h.totalCost / h.qty;
                     } else {
+                        h.totalCost -= h.avgCost * trade.quantity;
                         h.qty += qty;
                     }
                 }
@@ -462,6 +487,20 @@ export default function StocksPage() {
                 ? (valA as number) - (valB as number)
                 : (valB as number) - (valA as number);
         });
+
+    // ─── All‑time P&L (same as dashboard) ────────────────────────────────────
+    const cashBalance = profile?.balance ?? 0;
+    const entries = Object.values(holdings);
+    const currentValue = entries.reduce((sum, h) => {
+        const q = quotes[h.symbol];
+        const livePrice = marketOpen
+            ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
+            : (q?.price ?? h.avgCost);
+        return sum + livePrice * h.qty;
+    }, 0);
+    const portfolioValue = cashBalance + currentValue;
+    const totalPnl = portfolioValue - INITIAL_BALANCE;
+    const totalPnlUp = totalPnl >= 0;
 
     if (pageLoading || quotesLoading) return <StocksPageSkeleton />;
 
@@ -615,6 +654,9 @@ export default function StocksPage() {
                                 ticks={ticks}
                                 livePrices={livePrices}
                                 marketOpen={marketOpen}
+                                cashBalance={cashBalance}
+                                totalPnl={totalPnl}
+                                totalPnlUp={totalPnlUp}
                             />
                             <WatchlistSidebar
                                 watchlist={watchlist}

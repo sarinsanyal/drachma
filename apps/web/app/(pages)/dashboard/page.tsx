@@ -486,6 +486,7 @@ function MarketNews() {
         </div>
     );
 }
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -499,13 +500,8 @@ export default function Dashboard() {
     const [market, setMarket] = useState(getMarketStatus());
     const [countdown, setCountdown] = useState("");
 
-    // useEffect(() => {
-    //     const logToken = async () => {
-    //         const { data } = await supabase.auth.getSession();
-    //         console.log("ACCESS TOKEN:", data.session?.access_token);
-    //     };
-    //     logToken();
-    // }, []);
+    // 👇 Define your initial starting balance (adjust as needed)
+    const INITIAL_BALANCE = 10000;
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -588,13 +584,11 @@ export default function Dashboard() {
                     h.qty += qty;
                     h.avgCost = h.totalCost / h.qty;
                 } else {
-                    h.totalCost -= h.avgCost * trade.quantity; // remove cost basis of sold shares
-                    h.qty += qty; // negative
-                    // avgCost stays the same on sells
+                    h.totalCost -= h.avgCost * trade.quantity;
+                    h.qty += qty;
                 }
             }
 
-            // drop fully closed positions
             for (const sym of Object.keys(map)) {
                 if (map[sym].qty <= 0) delete map[sym];
             }
@@ -616,11 +610,12 @@ export default function Dashboard() {
         return sum + livePrice * h.qty;
     }, 0);
 
-    const totalPnl = currentValue - invested;
-    const totalPnlPct = invested > 0 ? (totalPnl / invested) * 100 : 0;
+    // ─── All‑time P&L (based on initial balance) ──────────────────────────────
     const portfolioValue = cashBalance + currentValue;
+    const totalPnl = portfolioValue - INITIAL_BALANCE;
+    const totalPnlPct = INITIAL_BALANCE > 0 ? (totalPnl / INITIAL_BALANCE) * 100 : 0;
 
-    //skeleton
+    // skeleton
     if (loading) {
         return (
             <div className="min-h-screen text-white">
@@ -749,9 +744,28 @@ export default function Dashboard() {
                                 ) : (
                                     Object.values(holdings).map((h) => {
                                         const q = quotes[h.symbol];
-                                        const livePrice = market.isOpen
-                                            ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
-                                            : (q?.price ?? h.avgCost);
+                                        // Replace the livePrice line inside the holdings .map():
+                                        const livePrice = quotesLoading
+                                            ? null
+                                            : market.isOpen
+                                                ? (ticks[h.symbol] ?? livePrices[h.symbol]?.close ?? q?.price ?? h.avgCost)
+                                                : (q?.price ?? h.avgCost);
+
+                                        if (livePrice === null) return (
+                                            <div key={h.symbol} className="flex items-center justify-between px-6 py-3 animate-pulse">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-white/10" />
+                                                    <div>
+                                                        <div className="h-3 w-12 bg-white/10 rounded mb-1.5" />
+                                                        <div className="h-2 w-20 bg-white/10 rounded" />
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="h-3 w-16 bg-white/10 rounded mb-1.5" />
+                                                    <div className="h-2 w-10 bg-white/10 rounded ml-auto" />
+                                                </div>
+                                            </div>
+                                        );
                                         const currentVal = livePrice * h.qty;
                                         const pnl = currentVal - h.avgCost * h.qty;
                                         const pnlPct = (pnl / (h.avgCost * h.qty)) * 100;

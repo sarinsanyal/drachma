@@ -1,40 +1,48 @@
 export const TRACKED_SYMBOLS = [
-  // Big Tech
-  "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "ORCL", "IBM", "INTC",
+  // Big Tech (5)
+  "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",
 
-  // Semiconductors
-  "AMD", "QCOM", "AVGO", "MU", "AMAT", "KLAC", "LRCX",
+  // Semiconductors (2)
+  "AMD", "AVGO",
 
-  // Finance
-  "JPM", "GS", "BAC", "MS", "V", "MA", "PYPL", "BRK.B",
+  // Finance (4)
+  "JPM", "V", "GS", "BRK.B",
 
-  // Healthcare & Pharma
-  "JNJ", "PFE", "MRNA", "ABBV", "UNH",
+  // Healthcare (2)
+  "JNJ", "UNH",
 
-  // Consumer & Retail
-  "WMT", "COST", "NKE", "MCD", "SBUX", "HD",
+  // Consumer & Retail (2)
+  "WMT", "MCD",
 
-  // Energy
+  // Energy (2)
   "XOM", "CVX",
 
-  // Media & Entertainment
-  "NFLX", "DIS", "SPOT",
+  // Media & Entertainment (2)
+  "NFLX", "SPOT",
 
-  // EVs & Auto
-  "F", "GM", "RIVN",
+  // EVs & Auto (1)
+  "TSLA",
 ];
 
 export const TICKER_NAMES: Record<string, string> = {
-  AAPL: "Apple", MSFT: "Microsoft", GOOGL: "Alphabet", AMZN: "Amazon",
-  META: "Meta", NVDA: "Nvidia", TSLA: "Tesla", ORCL: "Oracle",
-  IBM: "IBM", INTC: "Intel", AMD: "AMD", QCOM: "Qualcomm",
-  AVGO: "Broadcom", MU: "Micron", AMAT: "Applied Materials",
-  KLAC: "KLA Corp", LRCX: "Lam Research", JPM: "JPMorgan",
-  GS: "Goldman Sachs", BAC: "Bank of America", MS: "Morgan Stanley",
-  V: "Visa", MA: "Mastercard", PYPL: "PayPal", "BRK.B": "Berkshire",
-  JNJ: "Johnson & Johnson", PFE: "Pfizer", MRNA: "Moderna",
-  ABBV: "AbbVie", UNH: "UnitedHealth", WMT: "Walmart", COST: "Costco",
-  NKE: "Nike", MCD: "McDonald's", SBUX: "Starbucks", HD: "Home Depot",
-  XOM: "ExxonMobil", CVX: "Chevron", NFLX: "Netflix", DIS: "Disney",
-  SPOT: "Spotify", F: "Ford", GM: "General Motors", RIVN: "Rivian",
+  AAPL: "Apple",
+  MSFT: "Microsoft",
+  GOOGL: "Alphabet",
+  AMZN: "Amazon",
+  NVDA: "Nvidia",
+  AMD: "AMD",
+  AVGO: "Broadcom",
+  JPM: "JPMorgan",
+  V: "Visa",
+  GS: "Goldman Sachs",
+  "BRK.B": "Berkshire",
+  JNJ: "Johnson & Johnson",
+  UNH: "UnitedHealth",
+  WMT: "Walmart",
+  MCD: "McDonald's",
+  XOM: "ExxonMobil",
+  CVX: "Chevron",
+  NFLX: "Netflix",
+  SPOT: "Spotify",
+  TSLA: "Tesla",
 };
