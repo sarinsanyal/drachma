@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import Link from "next/link";
-import DashboardNavbar from "@/components/custom/dashboard/Navbar";
+import Navbar from "@/components/custom/Navbar";
 import {
     FiArrowLeft,
     FiSend,
@@ -215,7 +215,7 @@ export default function CreateBlogPostPage() {
 
     return (
         <div className="min-h-screen text-white">
-            <DashboardNavbar />
+            <Navbar />
 
             <div className="max-w-3xl mx-auto mt-10 px-4 pb-20">
                 <Link

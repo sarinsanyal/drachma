@@ -17,7 +17,7 @@ import {
     FiActivity,
     FiSearch
 } from "react-icons/fi";
-import DashboardNavbar from "@/components/custom/dashboard/Navbar";
+import Navbar from "@/components/custom/Navbar";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type Profile = {
@@ -242,7 +242,7 @@ export default function PublicProfilePage() {
     if (loading) {
         return (
             <div className="min-h-screen text-white">
-                <DashboardNavbar />
+                <Navbar />
                 <div className="max-w-5xl mx-auto mt-10 px-4">
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-8 animate-pulse max-w-2xl">
                         <div className="w-24 h-24 rounded-full bg-white/10 mb-4" />
@@ -257,7 +257,7 @@ export default function PublicProfilePage() {
     if (notFound || !profile) {
         return (
             <div className="min-h-screen text-white">
-                <DashboardNavbar />
+                <Navbar />
                 <div className="flex flex-col items-center justify-center gap-3 py-32 text-center">
                     <p className="text-lg font-semibold">This page doesn't exist.</p>
                     <Link href="/" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
@@ -270,7 +270,7 @@ export default function PublicProfilePage() {
 
     return (
         <div className="min-h-screen text-white">
-            <DashboardNavbar />
+            <Navbar />
 
             <div className="max-w-5xl mx-auto mt-10 px-4 pb-16">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
