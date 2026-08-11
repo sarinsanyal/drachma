@@ -588,6 +588,7 @@ export default function Dashboard() {
                     h.qty += qty;
                     h.avgCost = h.totalCost / h.qty;
                 } else {
+                    h.totalCost -= h.avgCost * trade.quantity; // remove cost basis of sold shares
                     h.qty += qty; // negative
                     // avgCost stays the same on sells
                 }

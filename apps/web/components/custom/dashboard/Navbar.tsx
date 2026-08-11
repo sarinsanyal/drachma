@@ -123,7 +123,7 @@ export default function DashboardNavbar() {
                                     </div>
                                 )}
                                 <Link
-                                    href={profile ? `/@${profile.username}` : "#"}
+                                    href={profile ? `/${profile.username}` : "#"}
                                     onClick={() => setDropdownOpen(false)}
                                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
                                 >
