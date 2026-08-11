@@ -12,7 +12,7 @@ export default function HeroPage() {
     const [startingMoney, setStartingMoney] = useState(0);
 
     useEffect(() => {
-        const controls = animate(0, 200, {
+        const controls = animate(0, 40, {
             duration: 1.2,
             onUpdate(value) {
                 setCompanyCount(Math.floor(value));
