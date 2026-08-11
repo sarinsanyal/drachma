@@ -112,10 +112,9 @@ export default function PublicProfilePage() {
             const ownerStatus = Boolean(user && user.id === profileData.id);
             setIsOwner(ownerStatus);
 
-            const { count: tCount } = await supabase
-                .from("trades")
-                .select("id", { count: "exact", head: true })
-                .eq("profile_id", profileData.id);
+            const { data: tCount } = await supabase.rpc("get_user_trade_count", {
+                target_user_id: profileData.id,
+            });
             setTradeCount(tCount ?? 0);
 
             const { count: wCount } = await supabase
