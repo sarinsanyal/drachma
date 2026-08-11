@@ -356,7 +356,7 @@ export default function CreateBlogPostPage() {
                                         <FiRotateCw size={14} />
                                     </button>
 
-                                    <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                    <div className="w-px h-4 bg-white/10 mx-1" />
 
                                     {/* Bold / Italic */}
                                     <button
@@ -376,7 +376,7 @@ export default function CreateBlogPostPage() {
                                         <FiItalic size={14} />
                                     </button>
 
-                                    <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                    <div className="w-px h-4 bg-white/10 mx-1" />
 
                                     {/* Headings */}
                                     <button
@@ -396,7 +396,7 @@ export default function CreateBlogPostPage() {
                                         H2
                                     </button>
 
-                                    <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                    <div className="w-px h-4 bg-white/10 mx-1" />
 
                                     {/* List, Quote, Code, Link */}
                                     <button

@@ -32,7 +32,7 @@ export default function HeroPage() {
     }, []);
 
     return (
-        <section className="min-h-screen flex flex-col md:flex-row justify-between gap-8 p-6 pt-20 text-white font-[family-name:var(--font-geist-sans)]">
+        <section className="min-h-screen flex flex-col md:flex-row justify-between gap-8 p-6 pt-20 text-white font-(family-name:--font-geist-sans)">
             {/* Left Text Block */}
             <div className="w-full md:w-1/2 max-w-4xl">
                 <motion.h1
